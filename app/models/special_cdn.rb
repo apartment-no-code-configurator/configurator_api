@@ -1,0 +1,2 @@
+class SpecialCdn < ApplicationRecord
+end

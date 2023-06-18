@@ -1,0 +1,40 @@
+name: Update Build and push to S3
+on:
+  push:
+    branches: main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v3
+      - name: Use Node.js 12.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+      - name: Generate build
+        run: npm run build
+      - name: Share artifact inside workflow
+        uses: actions/upload-artifact@v1
+        with:
+          name: <repo_name>-build
+          path: build
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: <repo_name>-build
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+      - name: Deploy to S3
+        run: aws s3 sync . s3://apartments-cdn-s3 --acl public-read
+        working-directory: <repo_name>-build
+      - name: Deploy to backup S3
+        run: aws s3 sync . s3://apartments-cdn-s3-backup --acl public-read
+        working-directory: <repo_name>-build
